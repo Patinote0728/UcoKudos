@@ -1,0 +1,17 @@
+# Java and Maven
+**/target/
+**/.mvn/wrapper/maven-wrapper.jar
+
+# Local environment and IDE state
+.env
+**/.env
+.idea/
+.vscode/
+*.iml
+
+# OS files
+Thumbs.db
+.DS_Store
+
+
+UcoKudos instrucciones.txt

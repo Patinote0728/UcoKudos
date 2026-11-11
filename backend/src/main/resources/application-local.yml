@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/ucokudos}
+    username: ${DB_USERNAME:ucokudos}
+    password: ${DB_PASSWORD:ucokudos_local}
+  jpa:
+    show-sql: false
+
+management:
+  endpoint:
+    health:
+      show-details: always
+
