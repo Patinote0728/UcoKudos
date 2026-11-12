@@ -10,6 +10,9 @@ import co.edu.uco.kudos.reconocimiento.dominio.CategoriaKudo;
 import co.edu.uco.kudos.reconocimiento.dominio.Kudo;
 import co.edu.uco.kudos.reconocimiento.persistencia.CategoriaKudoRepositorio;
 import co.edu.uco.kudos.reconocimiento.persistencia.KudoRepositorio;
+import co.edu.uco.kudos.auditoria.dominio.EventoAuditoria;
+import co.edu.uco.kudos.auditoria.persistencia.EventoAuditoriaRepositorio;
+import co.edu.uco.kudos.notificacion.aplicacion.ServicioColaNotificaciones;
 import co.edu.uco.kudos.usuario.dominio.Usuario;
 import co.edu.uco.kudos.usuario.persistencia.UsuarioRepositorio;
 import java.time.Instant;
@@ -27,17 +30,24 @@ public class ServicioKudos {
     private final KudoRepositorio kudos;
     private final UsuarioRepositorio usuarios;
     private final CategoriaKudoRepositorio categorias;
+    private final EventoAuditoriaRepositorio auditoria;
+    private final ServicioColaNotificaciones colaNotificaciones;
 
     public ServicioKudos(KudoRepositorio kudos, UsuarioRepositorio usuarios,
-                         CategoriaKudoRepositorio categorias) {
+                         CategoriaKudoRepositorio categorias, EventoAuditoriaRepositorio auditoria,
+                         ServicioColaNotificaciones colaNotificaciones) {
         this.kudos = kudos;
         this.usuarios = usuarios;
         this.categorias = categorias;
+        this.auditoria = auditoria;
+        this.colaNotificaciones = colaNotificaciones;
     }
 
     @Transactional
-    public KudoRespuesta publicar(CrearKudoSolicitud solicitud) {
-        Usuario autor = usuarioActivo(solicitud.autorId(), "autor");
+    public KudoRespuesta publicar(CrearKudoSolicitud solicitud, String correoAutor) {
+        Usuario autor = usuarios.findByCorreoInstitucional(correoAutor)
+                .filter(Usuario::isActivo)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró un autor activo para la sesión."));
         Usuario destinatario = usuarioActivo(solicitud.destinatarioId(), "destinatario");
         CategoriaKudo categoria = categorias.findById(solicitud.categoriaId())
                 .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró la categoría indicada."));
@@ -49,11 +59,15 @@ public class ServicioKudos {
         Instant ahora = Instant.now();
         Kudo kudo = new Kudo(UUID.randomUUID(), autor, destinatario, categoria,
                 solicitud.mensaje().trim(), ahora, ahora);
-        return convertir(kudos.save(kudo));
+        Kudo guardado = kudos.save(kudo);
+        auditoria.save(new EventoAuditoria(UUID.randomUUID(), "KUDO_PUBLICADO", autor,
+                "KUDO", guardado.getId(), ahora));
+        colaNotificaciones.programar(guardado, ahora);
+        return convertir(guardado);
     }
 
     @Transactional(readOnly = true)
-    public PaginaRespuesta<KudoRespuesta> listarPorDestinatario(UUID destinatarioId, int pagina, int tamano) {
+    public PaginaRespuesta<KudoRespuesta> listarPropios(String correoDestinatario, int pagina, int tamano) {
         if (pagina < 0) {
             throw new SolicitudInvalidaException("El número de página no puede ser negativo.");
         }
@@ -61,9 +75,11 @@ public class ServicioKudos {
             throw new SolicitudInvalidaException("El tamaño de página debe estar entre 1 y " + TAMANO_MAXIMO_PAGINA + ".");
         }
 
-        usuarioActivo(destinatarioId, "destinatario");
+        Usuario destinatario = usuarios.findByCorreoInstitucional(correoDestinatario)
+                .filter(Usuario::isActivo)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró el usuario activo para la sesión."));
         Page<KudoRespuesta> resultados = kudos
-                .findByDestinatarioIdOrderByCreadoEnDesc(destinatarioId, PageRequest.of(pagina, tamano))
+                .findByDestinatarioIdOrderByCreadoEnDesc(destinatario.getId(), PageRequest.of(pagina, tamano))
                 .map(this::convertir);
         return new PaginaRespuesta<>(resultados.getContent(), resultados.getNumber(), resultados.getSize(),
                 resultados.getTotalElements(), resultados.getTotalPages());

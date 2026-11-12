@@ -91,6 +91,7 @@ public class Usuario {
     public String getCorreoInstitucional() { return correoInstitucional; }
     public String getNumeroCelular() { return numeroCelular; }
     public String getNombreCompleto() { return nombreCompleto; }
+    public String getHashContrasena() { return hashContrasena; }
     public RolUsuario getRol() { return rol; }
     public EstadoAprobacion getEstadoAprobacion() { return estadoAprobacion; }
     public boolean isCorreoVerificado() { return correoVerificado; }

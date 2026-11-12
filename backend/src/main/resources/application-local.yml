@@ -6,6 +6,11 @@ spring:
   jpa:
     show-sql: false
 
+ucokudos:
+  demostracion:
+    habilitada: ${DEMO_ACCOUNTS_ENABLED:true}
+    contrasena: ${DEMO_ACCOUNTS_PASSWORD:CambioLocal123!}
+
 management:
   endpoint:
     health:

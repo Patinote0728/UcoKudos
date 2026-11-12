@@ -1,0 +1,35 @@
+package co.edu.uco.kudos.seguridad;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+
+@Configuration
+public class ConfiguracionSeguridad {
+
+    @Bean
+    SecurityFilterChain cadenaSeguridad(HttpSecurity http) throws Exception {
+        return http
+                .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(autorizacion -> autorizacion
+                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers("/api/csrf").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categorias-kudos").permitAll()
+                        .anyRequest().authenticated())
+                .httpBasic(Customizer.withDefaults())
+                .build();
+    }
+
+    @Bean
+    PasswordEncoder codificadorContrasenas() {
+        return new BCryptPasswordEncoder();
+    }
+}

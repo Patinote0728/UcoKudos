@@ -33,23 +33,29 @@ Las membresías permiten asociar a una persona como estudiante o docente en vari
 ## API inicial
 
 - `GET /api/categorias-kudos`: devuelve las categorías activas.
-- `POST /api/kudos`: publica un Kudo. El cuerpo requiere `autorId`, `destinatarioId`, `categoriaId` y `mensaje`.
-- `GET /api/kudos?destinatarioId=<UUID>&pagina=0&tamano=20`: devuelve los Kudos recibidos, ordenados del más reciente al más antiguo. El tamaño máximo es 50.
+- `GET /api/csrf`: obtiene el token CSRF necesario para solicitudes que modifican datos.
+- `POST /api/kudos`: publica un Kudo. Requiere autenticación; el autor se obtiene de la cuenta autenticada. El cuerpo requiere `destinatarioId`, `categoriaId` y `mensaje`.
+- `GET /api/kudos?pagina=0&tamano=20`: devuelve los Kudos recibidos por la cuenta autenticada, ordenados del más reciente al más antiguo. El tamaño máximo es 50.
 
 Ejemplo de publicación:
 
 ```json
 {
-  "autorId": "00000000-0000-0000-0000-000000000001",
   "destinatarioId": "00000000-0000-0000-0000-000000000002",
   "categoriaId": "10000000-0000-0000-0000-000000000003",
   "mensaje": "Gracias por tu apoyo al equipo."
 }
 ```
 
-La API valida que el mensaje no esté vacío, que autor y destinatario existan y estén activos, y que la categoría exista y esté activa. Usa `400` para solicitudes inválidas, `404` para recursos inexistentes, `409` para reglas de negocio y `201` al publicar.
+La API valida que el mensaje no esté vacío, que el autor autenticado y el destinatario existan y estén activos, y que la categoría exista y esté activa. Usa `400` para solicitudes inválidas, `401` para falta de autenticación, `403` para solicitudes sin token CSRF válido, `404` para recursos inexistentes, `409` para reglas de negocio y `201` al publicar. El buzón solo muestra Kudos recibidos por la cuenta autenticada.
 
-**Límite actual:** todavía no se implementó autenticación. `autorId` se recibe en el cuerpo y, por lo tanto, puede falsificarse. Estos endpoints sirven para desarrollo local; no se deben publicar hasta derivar el autor de una identidad autenticada y proteger las consultas.
+En el perfil local se crean dos cuentas de demostración: `demo.autor@uco.edu.co` y `demo.destinatario@uco.edu.co`. Ambas usan la contraseña definida por `DEMO_ACCOUNTS_PASSWORD` (por defecto `CambioLocal123!`). Cambia esa clave para tu entorno local. El cargador está limitado al perfil `local`; no se incluye en `prod`.
+
+La autenticación actual usa HTTP Basic y contraseñas BCrypt. Para solicitudes de escritura, solicita el token CSRF en `/api/csrf` y envíalo en la cabecera que indica la respuesta, conservando la cookie `XSRF-TOKEN` de la sesión HTTP. HTTP Basic solo debe usarse en producción detrás de HTTPS; para una experiencia de usuario final conviene evolucionar a inicio de sesión con tokens.
+
+La publicación registra `KUDO_PUBLICADO` en `evento_auditoria` y crea tres trabajos en `cola_notificacion` (correo, WhatsApp y push) dentro de la misma transacción que guarda el Kudo. Si no se puede guardar la auditoría o la cola, también se revierte la publicación.
+
+Un proceso en segundo plano reclama trabajos con `FOR UPDATE SKIP LOCKED`, para evitar que dos instancias envíen el mismo trabajo a la vez. Reintenta los fallos hasta ocho veces con esperas crecientes y recupera trabajos cuyo bloqueo venció. En `local`, el adaptador registra cada canal como `SIMULADA`; no envía mensajes reales. Aún faltan los adaptadores de proveedores para correo, WhatsApp y push, además del almacenamiento físico de adjuntos y la auditoría de intentos fallidos.
 
 ## Perfiles
 
