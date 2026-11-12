@@ -22,7 +22,7 @@ Desde esta carpeta, ejecuta:
 mvn spring-boot:run
 ```
 
-La aplicación quedará en `http://localhost:8080`. El estado de salud está disponible en `/actuator/health`.
+La aplicación quedará en `http://localhost:8080`. El estado de salud está disponible en `/actuator/health`. La interfaz web móvil se sirve desde la misma aplicación en `/`, sin un servidor frontend adicional.
 
 ## Modelo inicial
 
@@ -34,6 +34,9 @@ Las membresías permiten asociar a una persona como estudiante o docente en vari
 
 - `GET /api/categorias-kudos`: devuelve las categorías activas.
 - `GET /api/programas-academicos`: catálogo público de programas activos, con su facultad.
+- `GET /api/usuarios?busqueda=ana`: busca hasta diez personas activas por nombre. Requiere autenticación y devuelve solo identificador, nombre y rol.
+- `GET /api/mi-cuenta`: devuelve el nombre y rol de la cuenta autenticada.
+- `GET /api/facultades`: catálogo público de facultades activas.
 - `POST /api/registros`: crea una cuenta inactiva y su solicitud de aprobación. Acepta nombre, correo, celular internacional, contraseña, rol y el identificador de facultad o programa requerido por ese rol.
 - `POST /api/registros/verificar`: verifica correo y celular usando los dos códigos recibidos.
 - `GET /api/aprobaciones/pendientes`: lista las solicitudes pendientes para el rol y ámbito de la cuenta autenticada.
@@ -41,6 +44,8 @@ Las membresías permiten asociar a una persona como estudiante o docente en vari
 - `GET /api/csrf`: obtiene el token CSRF necesario para solicitudes que modifican datos.
 - `POST /api/kudos`: publica un Kudo. Requiere autenticación; el autor se obtiene de la cuenta autenticada. El cuerpo requiere `destinatarioId`, `categoriaId` y `mensaje`.
 - `GET /api/kudos?pagina=0&tamano=20`: devuelve los Kudos recibidos por la cuenta autenticada, ordenados del más reciente al más antiguo. El tamaño máximo es 50.
+
+La interfaz inicial en `/` permite iniciar sesión, registrar y verificar cuentas, revisar solicitudes para roles aprobadores, buscar destinatarios activos, publicar Kudos y consultar el buzón. Las credenciales se conservan solo en memoria mientras la pestaña está abierta; al recargar se solicita iniciar sesión de nuevo. En perfil local, los códigos para verificar el registro se consultan en el registro de la aplicación.
 
 Ejemplo de publicación:
 

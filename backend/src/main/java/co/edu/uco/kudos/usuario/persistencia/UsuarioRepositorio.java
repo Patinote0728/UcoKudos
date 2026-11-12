@@ -14,4 +14,6 @@ public interface UsuarioRepositorio extends JpaRepository<Usuario, UUID> {
     Optional<Usuario> findFirstByRolAndFacultadIdAndActivoTrue(RolUsuario rol, UUID facultadId);
     Optional<Usuario> findFirstByRolAndProgramaIdAndActivoTrue(RolUsuario rol, UUID programaId);
     boolean existsByNumeroCelular(String numeroCelular);
+    java.util.List<Usuario> findTop10ByActivoTrueAndIdNotAndNombreCompletoContainingIgnoreCaseOrderByNombreCompletoAsc(
+            UUID id, String nombreCompleto);
 }
