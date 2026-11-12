@@ -23,6 +23,7 @@ public class ConfiguracionSeguridad {
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/api/csrf").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categorias-kudos").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/registros", "/api/registros/verificar").permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())
                 .build();

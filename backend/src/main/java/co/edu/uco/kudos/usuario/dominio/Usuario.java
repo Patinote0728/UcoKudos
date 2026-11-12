@@ -111,4 +111,29 @@ public class Usuario {
         this.whatsappAutorizado = autorizado;
         this.actualizadoEn = actualizadoEn;
     }
+
+    public void aprobar(Instant instante) {
+        this.estadoAprobacion = EstadoAprobacion.APROBADA;
+        actualizarActividad(instante);
+    }
+
+    public void rechazar(Instant instante) {
+        this.estadoAprobacion = EstadoAprobacion.RECHAZADA;
+        this.activo = false;
+        this.actualizadoEn = instante;
+    }
+
+    public void verificar(CanalVerificacion canal, Instant instante) {
+        if (canal == CanalVerificacion.CORREO) {
+            this.correoVerificado = true;
+        } else {
+            this.celularVerificado = true;
+        }
+        actualizarActividad(instante);
+    }
+
+    private void actualizarActividad(Instant instante) {
+        this.activo = estadoAprobacion == EstadoAprobacion.APROBADA && correoVerificado && celularVerificado;
+        this.actualizadoEn = instante;
+    }
 }

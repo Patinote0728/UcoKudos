@@ -7,4 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ProgramaAcademicoRepositorio extends JpaRepository<ProgramaAcademico, UUID> {
     List<ProgramaAcademico> findByFacultadIdAndActivoTrue(UUID facultadId);
+    List<ProgramaAcademico> findByActivoTrueOrderByNombreAsc();
 }
