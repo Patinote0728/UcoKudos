@@ -62,12 +62,10 @@ public class CodigoVerificacion {
     public boolean coincide(String codigo, org.springframework.security.crypto.password.PasswordEncoder codificador, Instant ahora) {
         if (!puedeIntentar(ahora)) return false;
         intentos++;
-        if (codificador.matches(codigo, hashCodigo)) {
-            usadoEn = ahora;
-            return true;
-        }
-        return false;
+        return codificador.matches(codigo, hashCodigo);
     }
+
+    public void marcarUsado(Instant ahora) { usadoEn = ahora; }
 
     public Usuario getUsuario() { return usuario; }
     public CanalVerificacion getCanal() { return canal; }

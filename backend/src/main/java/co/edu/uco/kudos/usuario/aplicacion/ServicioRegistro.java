@@ -72,13 +72,16 @@ public class ServicioRegistro {
         entrega.enviar(canal,destino,codigo);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = CodigoVerificacionInvalidoException.class)
     public void verificar(VerificarRegistroSolicitud s) {
         Usuario u=usuarios.findByCorreoInstitucional(s.correoInstitucional().trim().toLowerCase()).orElseThrow(()->new ReglaNegocioException("Registro no encontrado."));
         Instant ahora=Instant.now();
         var correo=codigos.findByUsuarioIdAndCanal(u.getId(),CanalVerificacion.CORREO).orElseThrow(()->new ReglaNegocioException("Código de correo inválido o vencido."));
         var celular=codigos.findByUsuarioIdAndCanal(u.getId(),CanalVerificacion.CELULAR).orElseThrow(()->new ReglaNegocioException("Código de celular inválido o vencido."));
-        if (!correo.coincide(s.codigoCorreo(),codificador,ahora) || !celular.coincide(s.codigoCelular(),codificador,ahora)) throw new ReglaNegocioException("Código de verificación inválido, vencido o bloqueado.");
+        boolean correoValido=correo.coincide(s.codigoCorreo(),codificador,ahora);
+        boolean celularValido=celular.coincide(s.codigoCelular(),codificador,ahora);
+        if (!correoValido || !celularValido) throw new CodigoVerificacionInvalidoException();
+        correo.marcarUsado(ahora); celular.marcarUsado(ahora);
         u.verificar(CanalVerificacion.CORREO,ahora); u.verificar(CanalVerificacion.CELULAR,ahora);
         auditoria.save(new EventoAuditoria(UUID.randomUUID(),"CORREO_VERIFICADO",u,"USUARIO",u.getId(),ahora));
         auditoria.save(new EventoAuditoria(UUID.randomUUID(),"CELULAR_VERIFICADO",u,"USUARIO",u.getId(),ahora));

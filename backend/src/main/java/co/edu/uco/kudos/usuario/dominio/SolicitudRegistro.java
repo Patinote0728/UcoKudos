@@ -76,6 +76,7 @@ public class SolicitudRegistro {
     }
 
     public UUID getId() { return id; }
+    public Usuario getAprobador() { return aprobador; }
     public Usuario getUsuario() { return usuario; }
     public Facultad getFacultad() { return facultad; }
     public ProgramaAcademico getPrograma() { return programa; }

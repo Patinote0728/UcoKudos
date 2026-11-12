@@ -24,6 +24,7 @@ public class ConfiguracionSeguridad {
                         .requestMatchers("/api/csrf").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categorias-kudos").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/registros", "/api/registros/verificar").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/programas-academicos").permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())
                 .build();

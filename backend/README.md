@@ -30,9 +30,14 @@ Flyway aplica la migración `V1` al iniciar y crea facultades, programas académ
 
 Las membresías permiten asociar a una persona como estudiante o docente en varios programas. Los adjuntos guardan metadatos y una clave de almacenamiento; el almacenamiento físico y sus controles de acceso se añadirán junto al flujo de publicación.
 
-## API inicial
+## API
 
 - `GET /api/categorias-kudos`: devuelve las categorías activas.
+- `GET /api/programas-academicos`: catálogo público de programas activos, con su facultad.
+- `POST /api/registros`: crea una cuenta inactiva y su solicitud de aprobación. Acepta nombre, correo, celular internacional, contraseña, rol y el identificador de facultad o programa requerido por ese rol.
+- `POST /api/registros/verificar`: verifica correo y celular usando los dos códigos recibidos.
+- `GET /api/aprobaciones/pendientes`: lista las solicitudes pendientes para el rol y ámbito de la cuenta autenticada.
+- `POST /api/aprobaciones/{id}`: decide una solicitud con `decision` (`APROBADA` o `RECHAZADA`) y comentario opcional.
 - `GET /api/csrf`: obtiene el token CSRF necesario para solicitudes que modifican datos.
 - `POST /api/kudos`: publica un Kudo. Requiere autenticación; el autor se obtiene de la cuenta autenticada. El cuerpo requiere `destinatarioId`, `categoriaId` y `mensaje`.
 - `GET /api/kudos?pagina=0&tamano=20`: devuelve los Kudos recibidos por la cuenta autenticada, ordenados del más reciente al más antiguo. El tamaño máximo es 50.
@@ -49,7 +54,9 @@ Ejemplo de publicación:
 
 La API valida que el mensaje no esté vacío, que el autor autenticado y el destinatario existan y estén activos, y que la categoría exista y esté activa. Usa `400` para solicitudes inválidas, `401` para falta de autenticación, `403` para solicitudes sin token CSRF válido, `404` para recursos inexistentes, `409` para reglas de negocio y `201` al publicar. El buzón solo muestra Kudos recibidos por la cuenta autenticada.
 
-En el perfil local se crean dos cuentas de demostración: `demo.autor@uco.edu.co` y `demo.destinatario@uco.edu.co`. Ambas usan la contraseña definida por `DEMO_ACCOUNTS_PASSWORD` (por defecto `CambioLocal123!`). Cambia esa clave para tu entorno local. El cargador está limitado al perfil `local`; no se incluye en `prod`.
+En el perfil local se crean cuentas de demostración para autor, destinatario y la cadena de aprobaciones. Los correos para aprobación son `demo.programa@uco.edu.co`, `demo.facultad@uco.edu.co`, `demo.academico@uco.edu.co`, `demo.rector@uco.edu.co` y `demo.admin@uco.edu.co`. Todas usan la contraseña definida por `DEMO_ACCOUNTS_PASSWORD` (por defecto `CambioLocal123!`). Se crea también una facultad y programa de demostración. Cambia esa clave para tu entorno local. El cargador está limitado al perfil `local`; no se incluye en `prod`.
+
+En local, los códigos de verificación de correo y celular se escriben en el registro de la aplicación; su entrega real por correo y SMS aún debe configurarse antes de desplegar. Los códigos vencen en 10 minutos y permiten hasta cinco intentos. El estudiante y el docente quedan vinculados al programa seleccionado. Para este flujo, ambos requieren aprobación del coordinador de programa; es una regla inicial que deberá confirmarse con la institución.
 
 La autenticación actual usa HTTP Basic y contraseñas BCrypt. Para solicitudes de escritura, solicita el token CSRF en `/api/csrf` y envíalo en la cabecera que indica la respuesta, conservando la cookie `XSRF-TOKEN` de la sesión HTTP. HTTP Basic solo debe usarse en producción detrás de HTTPS; para una experiencia de usuario final conviene evolucionar a inicio de sesión con tokens.
 
