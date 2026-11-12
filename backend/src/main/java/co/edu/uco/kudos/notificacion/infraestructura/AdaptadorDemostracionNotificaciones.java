@@ -9,9 +9,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 @Component
 @Profile("local")
+@ConditionalOnProperty(name = "ucokudos.notificaciones.reales-habilitadas", havingValue = "false", matchIfMissing = true)
 public class AdaptadorDemostracionNotificaciones implements AdaptadorNotificaciones {
 
     private static final Logger logger = LoggerFactory.getLogger(AdaptadorDemostracionNotificaciones.class);

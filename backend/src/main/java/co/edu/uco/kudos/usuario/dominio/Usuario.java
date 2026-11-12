@@ -47,6 +47,9 @@ public class Usuario {
     @Column(name = "celular_verificado", nullable = false)
     private boolean celularVerificado;
 
+    @Column(name = "whatsapp_autorizado", nullable = false)
+    private boolean whatsappAutorizado;
+
     @Column(name = "activo", nullable = false)
     private boolean activo;
 
@@ -69,7 +72,7 @@ public class Usuario {
 
     public Usuario(UUID id, String correoInstitucional, String numeroCelular, String nombreCompleto,
                    String hashContrasena, RolUsuario rol, EstadoAprobacion estadoAprobacion,
-                   boolean correoVerificado, boolean celularVerificado, boolean activo,
+                   boolean correoVerificado, boolean celularVerificado, boolean whatsappAutorizado, boolean activo,
                    Facultad facultad, ProgramaAcademico programa, Instant creadoEn, Instant actualizadoEn) {
         this.id = id;
         this.correoInstitucional = correoInstitucional;
@@ -80,6 +83,7 @@ public class Usuario {
         this.estadoAprobacion = estadoAprobacion;
         this.correoVerificado = correoVerificado;
         this.celularVerificado = celularVerificado;
+        this.whatsappAutorizado = whatsappAutorizado;
         this.activo = activo;
         this.facultad = facultad;
         this.programa = programa;
@@ -96,9 +100,15 @@ public class Usuario {
     public EstadoAprobacion getEstadoAprobacion() { return estadoAprobacion; }
     public boolean isCorreoVerificado() { return correoVerificado; }
     public boolean isCelularVerificado() { return celularVerificado; }
+    public boolean isWhatsappAutorizado() { return whatsappAutorizado; }
     public boolean isActivo() { return activo; }
     public Facultad getFacultad() { return facultad; }
     public ProgramaAcademico getPrograma() { return programa; }
     public Instant getCreadoEn() { return creadoEn; }
     public Instant getActualizadoEn() { return actualizadoEn; }
+
+    public void cambiarAutorizacionWhatsapp(boolean autorizado, Instant actualizadoEn) {
+        this.whatsappAutorizado = autorizado;
+        this.actualizadoEn = actualizadoEn;
+    }
 }

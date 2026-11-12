@@ -6,5 +6,6 @@ public enum EstadoNotificacion {
     REINTENTAR,
     ENVIADA,
     SIMULADA,
+    OMITIDA,
     FALLIDA
 }

@@ -38,7 +38,7 @@ public class CargadorUsuariosDemostracion {
         Instant ahora = Instant.now();
         Usuario usuario = new Usuario(UUID.randomUUID(), correo, celular, nombre,
                 codificador.encode(contrasena), RolUsuario.ESTUDIANTE, EstadoAprobacion.APROBADA,
-                true, true, true, null, null, ahora, ahora);
+                true, true, false, true, null, null, ahora, ahora);
         usuarios.save(usuario);
     }
 }

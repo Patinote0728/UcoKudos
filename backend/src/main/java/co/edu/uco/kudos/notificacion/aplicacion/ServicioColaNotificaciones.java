@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ServicioColaNotificaciones {
 
     private static final int INTENTOS_MAXIMOS = 8;
-    private static final int TAMANO_LOTE = 20;
+    private static final int TAMANO_LOTE = 5;
     private static final long BLOQUEO_MINUTOS = 5;
 
     private final ColaNotificacionRepositorio notificaciones;
@@ -46,16 +46,23 @@ public class ServicioColaNotificaciones {
         ColaNotificacion notificacion = notificaciones.findById(id)
                 .orElseThrow(() -> new IllegalStateException("No se encontró el trabajo de notificación."));
         Kudo kudo = notificacion.getKudo();
-        return new NotificacionPendiente(notificacion.getId(), kudo.getId(), notificacion.getCanal(),
+        return new NotificacionPendiente(notificacion.getId(), kudo.getId(),
+                notificacion.getDestinatario().getId(), notificacion.getCanal(),
                 notificacion.getDestinatario().getCorreoInstitucional(),
-                notificacion.getDestinatario().getNumeroCelular(), kudo.getMensaje());
+                notificacion.getDestinatario().getNumeroCelular(),
+                notificacion.getDestinatario().getNombreCompleto(), kudo.getAutor().getNombreCompleto(),
+                kudo.getCategoria().getNombre(), notificacion.getDestinatario().isWhatsappAutorizado(),
+                kudo.getMensaje());
     }
 
     @Transactional
     public void registrarResultado(UUID id, ResultadoNotificacion resultado) {
         ColaNotificacion notificacion = cargar(id);
-        EstadoNotificacion estado = resultado == ResultadoNotificacion.ENVIADA
-                ? EstadoNotificacion.ENVIADA : EstadoNotificacion.SIMULADA;
+        EstadoNotificacion estado = switch (resultado) {
+            case ENVIADA -> EstadoNotificacion.ENVIADA;
+            case SIMULADA -> EstadoNotificacion.SIMULADA;
+            case OMITIDA -> EstadoNotificacion.OMITIDA;
+        };
         notificacion.marcarCompletada(estado, Instant.now());
     }
 

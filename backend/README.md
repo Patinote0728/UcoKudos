@@ -8,7 +8,7 @@
 
 ## Configuración local
 
-Con Docker Compose, inicia PostgreSQL desde esta carpeta:
+Con Docker Compose, inicia PostgreSQL desde esta carpeta. El contenedor publica el puerto `5433` del equipo para evitar conflictos con instalaciones locales:
 
 ```powershell
 docker compose up -d database
@@ -55,7 +55,25 @@ La autenticación actual usa HTTP Basic y contraseñas BCrypt. Para solicitudes 
 
 La publicación registra `KUDO_PUBLICADO` en `evento_auditoria` y crea tres trabajos en `cola_notificacion` (correo, WhatsApp y push) dentro de la misma transacción que guarda el Kudo. Si no se puede guardar la auditoría o la cola, también se revierte la publicación.
 
-Un proceso en segundo plano reclama trabajos con `FOR UPDATE SKIP LOCKED`, para evitar que dos instancias envíen el mismo trabajo a la vez. Reintenta los fallos hasta ocho veces con esperas crecientes y recupera trabajos cuyo bloqueo venció. En `local`, el adaptador registra cada canal como `SIMULADA`; no envía mensajes reales. Aún faltan los adaptadores de proveedores para correo, WhatsApp y push, además del almacenamiento físico de adjuntos y la auditoría de intentos fallidos.
+Un proceso en segundo plano reclama trabajos con `FOR UPDATE SKIP LOCKED`, para evitar que dos instancias envíen el mismo trabajo a la vez. Reintenta los fallos hasta ocho veces con esperas crecientes y recupera trabajos cuyo bloqueo venció. El envío es de tipo *al menos una vez*: si el proveedor acepta un mensaje y el proceso se interrumpe antes de registrar el resultado, podría volver a enviarse en el reintento. `ENVIADA` significa que el proveedor aceptó la solicitud; todavía no se consumen webhooks de entrega final.
+
+En `local`, cada canal queda como `SIMULADA`; no se envían mensajes reales. Para habilitar adaptadores reales, activa `UCOKUDOS_NOTIFICACIONES_REALES_HABILITADAS=true` y configura sus credenciales como variables de entorno. No guardes secretos en los archivos del repositorio.
+
+### Correo por Brevo
+
+Configura `UCOKUDOS_NOTIFICACIONES_BREVO_API_KEY` y `UCOKUDOS_NOTIFICACIONES_BREVO_REMITENTE`. El remitente debe estar registrado/verificado en Brevo. El adaptador usa la API transaccional, no SMTP.
+
+### WhatsApp Cloud API de Meta
+
+Configura `UCOKUDOS_NOTIFICACIONES_WHATSAPP_TOKEN`, `UCOKUDOS_NOTIFICACIONES_WHATSAPP_PHONE_NUMBER_ID`, `UCOKUDOS_NOTIFICACIONES_WHATSAPP_GRAPH_VERSION` y `UCOKUDOS_NOTIFICACIONES_WHATSAPP_TEMPLATE_NAME`; `UCOKUDOS_NOTIFICACIONES_WHATSAPP_TEMPLATE_LANGUAGE` es opcional y usa `es_CO` por defecto. La plantilla aprobada debe tener tres parámetros de cuerpo, en este orden: autor, categoría y mensaje.
+
+La persona también debe autorizar este canal desde `PUT /api/mi-cuenta/preferencias/notificaciones` con `{ "autorizado": true }`; puede revocarlo enviando `false`. Si no hay autorización, el trabajo queda `OMITIDA`. Meta exige una plantilla aprobada para iniciar conversaciones fuera de la ventana de servicio de 24 horas y aplica los precios vigentes a mensajes iniciados por la empresa; revisa su política antes de habilitarlo. [Política de WhatsApp Business](https://business.whatsapp.com/policy/preview?lang=es_LA)
+
+### Push por Firebase Cloud Messaging
+
+Configura `UCOKUDOS_NOTIFICACIONES_FIREBASE_PROJECT_ID` y `GOOGLE_APPLICATION_CREDENTIALS` apuntando a una cuenta de servicio con permiso FCM. El cliente registra el FID autenticado con `POST /api/dispositivos-push` y puede revocarlo con `DELETE /api/dispositivos-push/{id}`. El backend nunca devuelve el FID. Sin dispositivos registrados, el trabajo queda `OMITIDA`. FCM no tiene costo de uso según Firebase, aunque el proyecto Firebase/Google Cloud puede tener otros servicios facturables. [Firebase Cloud Messaging](https://firebase.google.com/products/cloud-messaging)
+
+El estado `ENVIADA` confirma aceptación por el proveedor, no entrega al teléfono o bandeja. Los canales reales requieren credenciales válidas y no han sido ejercitados contra cuentas externas. Los adjuntos físicos y la auditoría de intentos fallidos siguen pendientes.
 
 ## Perfiles
 
