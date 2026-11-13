@@ -396,6 +396,8 @@ Los estudiantes deberán entregar:
 - Drivers arquitectónicos.
 - ADR's
 
+El desarrollo de estos artefactos para la línea base de UCO Kudos se encuentra en [ArquitecturaUcoKudos.md](ArquitecturaUcoKudos.md), incluyendo diagramas Mermaid, drivers, decisiones ADR y brechas conocidas.
+
 ---
 
 # Architecture Building Blocks (ABB)
