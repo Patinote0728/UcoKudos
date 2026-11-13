@@ -9,6 +9,7 @@ import co.edu.uco.kudos.academico.dominio.ProgramaAcademico;
 import co.edu.uco.kudos.academico.persistencia.FacultadRepositorio;
 import co.edu.uco.kudos.academico.persistencia.ProgramaAcademicoRepositorio;
 import java.time.Instant;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
@@ -19,7 +20,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
-@Profile("local")
+@Profile({"local", "prod"})
 @ConditionalOnProperty(name = "ucokudos.demostracion.habilitada", havingValue = "true", matchIfMissing = true)
 public class CargadorUsuariosDemostracion {
 
@@ -31,6 +32,10 @@ public class CargadorUsuariosDemostracion {
             PasswordEncoder codificador,
             @Value("${ucokudos.demostracion.contrasena}") String contrasena) {
         return args -> {
+            if (contrasena == null || contrasena.length() < 12
+                    || contrasena.getBytes(StandardCharsets.UTF_8).length > 72) {
+                throw new IllegalStateException("DEMO_ACCOUNTS_PASSWORD debe tener al menos 12 caracteres y máximo 72 bytes.");
+            }
             crearSiNoExiste(usuarios, codificador, "demo.autor@uco.edu.co", "Demo Autor", "+573000000001", contrasena);
             crearSiNoExiste(usuarios, codificador, "demo.destinatario@uco.edu.co", "Demo Destinatario", "+573000000002", contrasena);
             Instant ahora=Instant.now();

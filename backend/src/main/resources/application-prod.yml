@@ -24,7 +24,8 @@ management:
 
 ucokudos:
   demostracion:
-    habilitada: false
+    habilitada: ${DEMO_ACCOUNTS_ENABLED:false}
+    contrasena: ${DEMO_ACCOUNTS_PASSWORD:}
   adjuntos:
     supabase:
       url: ${SUPABASE_URL}

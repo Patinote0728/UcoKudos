@@ -102,7 +102,9 @@ Provisiona PostgreSQL administrado y configura `DB_URL`, `DB_USERNAME` y `DB_PAS
 
 El perfil `prod` requiere correo transaccional por Brevo y Firebase push. En Render configura `UCOKUDOS_NOTIFICACIONES_BREVO_API_KEY`, `UCOKUDOS_NOTIFICACIONES_BREVO_REMITENTE` y `UCOKUDOS_NOTIFICACIONES_FIREBASE_PROJECT_ID`. Para FCM, agrega la credencial de cuenta de servicio como archivo secreto en Render y define `GOOGLE_APPLICATION_CREDENTIALS` con su ruta. El remitente debe estar verificado en Brevo. No se requieren credenciales de WhatsApp. No uses el plan gratuito de base de datos de Render para datos que deban durar: vence a los 30 días.
 
-Activa el perfil con `SPRING_PROFILES_ACTIVE=prod`. No configures `DEMO_ACCOUNTS_ENABLED` ni publiques secretos en archivos del repositorio. Los servicios gratuitos pueden suspenderse por inactividad, tener límites o cambiar sus condiciones; esta configuración sirve para una demostración y no sustituye copias de seguridad ni un servicio con garantías de disponibilidad.
+Para una demostración temporal, se pueden crear cuentas de demostración en producción configurando `DEMO_ACCOUNTS_ENABLED=true` y `DEMO_ACCOUNTS_PASSWORD` con una contraseña privada y robusta. Se generan las cuentas `demo.programa@uco.edu.co`, `demo.facultad@uco.edu.co`, `demo.academico@uco.edu.co`, `demo.rector@uco.edu.co`, `demo.admin@uco.edu.co`, `demo.autor@uco.edu.co` y `demo.destinatario@uco.edu.co`. Las cuentas usan la contraseña configurada. Al terminar la demostración, desactiva el cargador y elimina o cambia las cuentas de demostración; desactivarlo no borra usuarios ya creados.
+
+Activa el perfil con `SPRING_PROFILES_ACTIVE=prod`. Mantén `DEMO_ACCOUNTS_ENABLED` desactivado salvo para una demostración temporal; no publiques contraseñas ni otros secretos en archivos del repositorio. Los servicios gratuitos pueden suspenderse por inactividad, tener límites o cambiar sus condiciones; esta configuración sirve para una demostración y no sustituye copias de seguridad ni un servicio con garantías de disponibilidad.
 
 ## Perfiles
 
