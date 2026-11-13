@@ -28,7 +28,7 @@ La aplicación quedará en `http://localhost:8080`. El estado de salud está dis
 
 Flyway aplica la migración `V1` al iniciar y crea facultades, programas académicos, usuarios, membresías a programas, categorías, Kudos y metadatos de adjuntos. También carga las categorías institucionales iniciales. El modelo impone un único rol por usuario, la activación solo después de aprobación y verificación de correo y celular, y la unicidad del rector y de los coordinadores activos en sus ámbitos.
 
-Las membresías permiten asociar a una persona como estudiante o docente en varios programas. Los adjuntos guardan metadatos y una clave de almacenamiento; el almacenamiento físico y sus controles de acceso se añadirán junto al flujo de publicación.
+Las membresías permiten asociar a una persona como estudiante o docente en varios programas. Los archivos adjuntos se guardan fuera de los recursos públicos en `backend/datos/adjuntos` cuando se ejecuta desde esta carpeta. Configura `UCOKUDOS_ADJUNTOS_RUTA` para cambiar la ruta. Esa carpeta está excluida de Git. Cada Kudo admite hasta tres archivos PDF, PNG o JPG de máximo 5 MB cada uno; solo el autor puede cargarlos y solo el autor o destinatario puede consultarlos.
 
 ## API
 
@@ -44,8 +44,11 @@ Las membresías permiten asociar a una persona como estudiante o docente en vari
 - `GET /api/csrf`: obtiene el token CSRF necesario para solicitudes que modifican datos.
 - `POST /api/kudos`: publica un Kudo. Requiere autenticación; el autor se obtiene de la cuenta autenticada. El cuerpo requiere `destinatarioId`, `categoriaId` y `mensaje`.
 - `GET /api/kudos?pagina=0&tamano=20`: devuelve los Kudos recibidos por la cuenta autenticada, ordenados del más reciente al más antiguo. El tamaño máximo es 50.
+- `POST /api/kudos/{id}/adjuntos`: recibe un archivo en el campo multipart `archivo`; solo el autor del Kudo puede adjuntarlo.
+- `GET /api/kudos/{id}/adjuntos`: lista los metadatos de los adjuntos para el autor o destinatario.
+- `GET /api/kudos/{id}/adjuntos/{adjuntoId}/contenido`: descarga el archivo para el autor o destinatario.
 
-La interfaz inicial en `/` permite iniciar sesión, registrar y verificar cuentas, revisar solicitudes para roles aprobadores, buscar destinatarios activos, publicar Kudos y consultar el buzón. Las credenciales se conservan solo en memoria mientras la pestaña está abierta; al recargar se solicita iniciar sesión de nuevo. En perfil local, los códigos para verificar el registro se consultan en el registro de la aplicación.
+La interfaz inicial en `/` permite iniciar sesión, registrar y verificar cuentas, revisar solicitudes para roles aprobadores, buscar destinatarios activos, publicar Kudos con adjuntos y consultar el buzón. Las credenciales se conservan solo en memoria mientras la pestaña está abierta; al recargar se solicita iniciar sesión de nuevo. En perfil local, los códigos para verificar el registro se consultan en el registro de la aplicación.
 
 Ejemplo de publicación:
 
@@ -85,7 +88,11 @@ La persona también debe autorizar este canal desde `PUT /api/mi-cuenta/preferen
 
 Configura `UCOKUDOS_NOTIFICACIONES_FIREBASE_PROJECT_ID` y `GOOGLE_APPLICATION_CREDENTIALS` apuntando a una cuenta de servicio con permiso FCM. El cliente registra el FID autenticado con `POST /api/dispositivos-push` y puede revocarlo con `DELETE /api/dispositivos-push/{id}`. El backend nunca devuelve el FID. Sin dispositivos registrados, el trabajo queda `OMITIDA`. FCM no tiene costo de uso según Firebase, aunque el proyecto Firebase/Google Cloud puede tener otros servicios facturables. [Firebase Cloud Messaging](https://firebase.google.com/products/cloud-messaging)
 
-El estado `ENVIADA` confirma aceptación por el proveedor, no entrega al teléfono o bandeja. Los canales reales requieren credenciales válidas y no han sido ejercitados contra cuentas externas. Los adjuntos físicos y la auditoría de intentos fallidos siguen pendientes.
+El estado `ENVIADA` confirma aceptación por el proveedor, no entrega al teléfono o bandeja. Los canales reales requieren credenciales válidas y no han sido ejercitados contra cuentas externas. La auditoría de intentos fallidos de notificación sigue pendiente.
+
+## Verificación automática
+
+El flujo `.github/workflows/verificacion.yml` compila el proyecto con Java 17 en cada push y pull request. También analiza dependencias, secretos y configuración con Trivy. El análisis reporta hallazgos sin bloquear todavía la compilación; revisa los resultados y endurece el umbral cuando se haya establecido una línea base.
 
 ## Perfiles
 

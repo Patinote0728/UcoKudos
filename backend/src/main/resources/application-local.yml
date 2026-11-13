@@ -5,8 +5,14 @@ spring:
     password: ${DB_PASSWORD:ucokudos_local}
   jpa:
     show-sql: false
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
 
 ucokudos:
+  adjuntos:
+    ruta: ${UCOKUDOS_ADJUNTOS_RUTA:./datos/adjuntos}
   demostracion:
     habilitada: ${DEMO_ACCOUNTS_ENABLED:true}
     contrasena: ${DEMO_ACCOUNTS_PASSWORD:CambioLocal123!}

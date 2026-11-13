@@ -125,6 +125,8 @@
               <label for="mensaje-kudo">Tu mensaje</label>
               <textarea id="mensaje-kudo" rows="5" placeholder="Cuéntale por qué su aporte es especial…" required></textarea>
               <div class="contador"><span>Unas palabras sinceras valen mucho.</span><span id="contador-mensaje">0</span></div>
+              <label for="archivos-kudo">Adjuntar imágenes o PDF (hasta 3 archivos, 5 MB cada uno)</label>
+              <input id="archivos-kudo" type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" multiple>
               <button id="publicar-kudo" class="boton boton-principal boton-ancho" type="submit">Enviar reconocimiento <span aria-hidden="true">↗</span></button>
               <p id="estado-publicacion" class="mensaje oculto" role="status"></p>
             </form>

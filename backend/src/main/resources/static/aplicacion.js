@@ -13,15 +13,17 @@ async function peticion(url, opciones = {}) {
   const encabezados = new Headers(opciones.headers || {});
   if (estado.correo) encabezados.set('Authorization', credencialBasica());
   if (opciones.method && !['GET', 'HEAD'].includes(opciones.method.toUpperCase())) {
-    if (!estado.csrf) {
-      const respuestaCsrf = await fetch('/api/csrf', { credentials: 'same-origin' });
-      if (!respuestaCsrf.ok) throw new Error('No se pudo preparar la solicitud segura.');
-      estado.csrf = await respuestaCsrf.json();
-    }
+    // Cada escritura obtiene un token vigente; el servidor puede renovar la cookie CSRF entre solicitudes.
+    const respuestaCsrf = await fetch('/api/csrf', { credentials: 'same-origin' });
+    if (!respuestaCsrf.ok) throw new Error('No se pudo preparar la solicitud segura.');
+    estado.csrf = await respuestaCsrf.json();
     encabezados.set(estado.csrf.nombreCabecera, estado.csrf.token);
   }
   const respuesta = await fetch(url, { ...opciones, headers: encabezados, credentials: 'same-origin' });
-  if (respuesta.status === 401) throw new Error('La sesión terminó o las credenciales no son válidas.');
+  if (respuesta.status === 401) {
+    const metodo = (opciones.method || 'GET').toUpperCase();
+    throw new Error(`El servidor rechazó la solicitud ${metodo} ${url} (401). Inicia sesión de nuevo.`);
+  }
   const tipo = respuesta.headers.get('content-type') || '';
   const contenido = tipo.includes('application/json') ? await respuesta.json() : null;
   if (!respuesta.ok) throw new Error(contenido?.mensaje || 'No se pudo completar la solicitud. Intenta de nuevo.');
@@ -72,13 +74,43 @@ function renderizarKudos(elementos) {
     mensaje.textContent = kudo.mensaje;
     cabecera.append(avatar, datos, categoria);
     tarjeta.append(cabecera, mensaje);
+    if (kudo.adjuntos?.length) {
+      const adjuntos = document.createElement('div');
+      adjuntos.className = 'adjuntos-kudo';
+      kudo.adjuntos.forEach((adjunto) => {
+        const boton = document.createElement('button');
+        boton.type = 'button';
+        boton.className = 'boton-enlace';
+        boton.textContent = `Descargar ${adjunto.nombreArchivo} (${Math.ceil(adjunto.tamanoBytes / 1024)} KB)`;
+        boton.addEventListener('click', () => descargarAdjunto(kudo.id, adjunto).catch((error) => mostrarAviso(error.message)));
+        adjuntos.append(boton);
+      });
+      tarjeta.append(adjuntos);
+    }
     return tarjeta;
   }));
 }
 
+async function descargarAdjunto(kudoId, adjunto) {
+  const encabezados = new Headers();
+  encabezados.set('Authorization', credencialBasica());
+  const respuesta = await fetch(`/api/kudos/${kudoId}/adjuntos/${adjunto.id}/contenido`, { headers: encabezados });
+  if (!respuesta.ok) throw new Error('No se pudo descargar el archivo.');
+  const url = URL.createObjectURL(await respuesta.blob());
+  const enlace = document.createElement('a');
+  enlace.href = url;
+  enlace.download = adjunto.nombreArchivo;
+  enlace.click();
+  URL.revokeObjectURL(url);
+}
+
 async function cargarBuzon() {
   const resultado = await peticion('/api/kudos?pagina=0&tamano=50');
-  renderizarKudos(resultado.elementos || []);
+  const elementos = await Promise.all((resultado.elementos || []).map(async (kudo) => ({
+    ...kudo,
+    adjuntos: await peticion(`/api/kudos/${kudo.id}/adjuntos`).catch(() => [])
+  })));
+  renderizarKudos(elementos);
 }
 
 async function cargarCategorias() {
@@ -114,11 +146,20 @@ function mostrarAplicacion() {
 async function iniciarSesion(correo, contrasena) {
   estado.correo = correo.trim().toLowerCase();
   estado.contrasena = contrasena;
-  // Comprueba credenciales antes de guardar la sesión solo en esta pestaña.
-  await peticion('/api/kudos?pagina=0&tamano=1');
-  estado.usuario = await peticion('/api/mi-cuenta');
+  try {
+    // Valida credenciales y perfil antes de mostrar la aplicación.
+    await peticion('/api/kudos?pagina=0&tamano=1');
+    estado.usuario = await peticion('/api/mi-cuenta');
+  } catch (error) {
+    estado.correo = null;
+    estado.contrasena = null;
+    estado.usuario = null;
+    throw error;
+  }
   mostrarAplicacion();
-  await Promise.all([cargarBuzon(), cargarCategorias()]);
+  const cargas = await Promise.allSettled([cargarBuzon(), cargarCategorias()]);
+  const fallo = cargas.find((resultado) => resultado.status === 'rejected');
+  if (fallo) mostrarAviso(fallo.reason.message);
 }
 
 function cerrarSesion() {
@@ -347,19 +388,35 @@ porId('formulario-kudo').addEventListener('submit', async (evento) => {
   const boton = porId('publicar-kudo');
   boton.disabled = true;
   try {
-    await peticion('/api/kudos', {
+    const archivos = [...porId('archivos-kudo').files];
+    if (archivos.length > 3) throw new Error('Cada Kudo admite hasta tres archivos.');
+    if (archivos.some((archivo) => archivo.size > 5 * 1024 * 1024)) throw new Error('Cada archivo puede pesar máximo 5 MB.');
+    const kudo = await peticion('/api/kudos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ destinatarioId: porId('destinatario-id').value, categoriaId: porId('categoria').value, mensaje: porId('mensaje-kudo').value })
     });
+    let errorAdjunto = null;
+    for (const archivo of archivos) {
+      const datos = new FormData();
+      datos.append('archivo', archivo);
+      try {
+        await peticion(`/api/kudos/${kudo.id}/adjuntos`, { method: 'POST', body: datos });
+      } catch (error) {
+        errorAdjunto = error.message;
+        break;
+      }
+    }
     formulario.reset();
     porId('contador-mensaje').textContent = '0';
     porId('destinatario-id').value = '';
     porId('destinatario-elegido').classList.add('oculto');
     porId('resultados-destinatario').classList.add('oculto');
-    estadoPublicacion.textContent = 'Tu reconocimiento fue enviado. ¡Gracias por compartirlo!';
-    estadoPublicacion.className = 'mensaje';
-    mostrarAviso('Kudo enviado con éxito.');
+    estadoPublicacion.textContent = errorAdjunto
+      ? `El Kudo se envió, pero no se pudo guardar uno de los archivos: ${errorAdjunto}`
+      : 'Tu reconocimiento fue enviado. ¡Gracias por compartirlo!';
+    estadoPublicacion.className = errorAdjunto ? 'mensaje error' : 'mensaje';
+    mostrarAviso(errorAdjunto ? 'El Kudo se envió con un problema en los adjuntos.' : 'Kudo enviado con éxito.');
   } catch (error) {
     estadoPublicacion.textContent = error.message;
     estadoPublicacion.className = 'mensaje error';

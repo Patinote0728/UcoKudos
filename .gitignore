@@ -1,6 +1,8 @@
 # Java and Maven
 **/target/
 **/.mvn/wrapper/maven-wrapper.jar
+**/datos/adjuntos/
+/backend/logs/
 
 # Local environment and IDE state
 .env
