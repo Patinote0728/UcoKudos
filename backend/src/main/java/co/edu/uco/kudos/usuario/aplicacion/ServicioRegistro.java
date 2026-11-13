@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,15 +29,18 @@ public class ServicioRegistro {
     private final EventoAuditoriaRepositorio auditoria;
     private final PasswordEncoder codificador;
     private final EntregaCodigoVerificacion entrega;
+    private final boolean verificacionCelularHabilitada;
     private final SecureRandom aleatorio = new SecureRandom();
 
     public ServicioRegistro(UsuarioRepositorio usuarios, FacultadRepositorio facultades,
             ProgramaAcademicoRepositorio programas, VinculacionUsuarioProgramaRepositorio vinculaciones,
             SolicitudRegistroRepositorio solicitudes, CodigoVerificacionRepositorio codigos,
-            EventoAuditoriaRepositorio auditoria, PasswordEncoder codificador, EntregaCodigoVerificacion entrega) {
+            EventoAuditoriaRepositorio auditoria, PasswordEncoder codificador, EntregaCodigoVerificacion entrega,
+            @Value("${ucokudos.verificacion.celular-habilitada:true}") boolean verificacionCelularHabilitada) {
         this.usuarios=usuarios; this.facultades=facultades; this.programas=programas;
         this.vinculaciones=vinculaciones; this.solicitudes=solicitudes; this.codigos=codigos;
         this.auditoria=auditoria; this.codificador=codificador; this.entrega=entrega;
+        this.verificacionCelularHabilitada=verificacionCelularHabilitada;
     }
 
     @Transactional
@@ -63,7 +67,8 @@ public class ServicioRegistro {
         if (s.rol()==RolUsuario.ESTUDIANTE || s.rol()==RolUsuario.DOCENTE)
             vinculaciones.save(new VinculacionUsuarioPrograma(u,programa,s.rol()==RolUsuario.ESTUDIANTE?TipoVinculacion.ESTUDIANTE:TipoVinculacion.DOCENTE,ahora));
         solicitudes.save(new SolicitudRegistro(UUID.randomUUID(),u,facultad,programa,aprobador,ahora));
-        emitir(u,CanalVerificacion.CORREO,correo,ahora); emitir(u,CanalVerificacion.CELULAR,s.numeroCelular(),ahora);
+        emitir(u,CanalVerificacion.CORREO,correo,ahora);
+        if (verificacionCelularHabilitada) emitir(u,CanalVerificacion.CELULAR,s.numeroCelular(),ahora);
     }
 
     private void emitir(Usuario u, CanalVerificacion canal, String destino, Instant ahora) {
@@ -77,13 +82,19 @@ public class ServicioRegistro {
         Usuario u=usuarios.findByCorreoInstitucional(s.correoInstitucional().trim().toLowerCase()).orElseThrow(()->new ReglaNegocioException("Registro no encontrado."));
         Instant ahora=Instant.now();
         var correo=codigos.findByUsuarioIdAndCanal(u.getId(),CanalVerificacion.CORREO).orElseThrow(()->new ReglaNegocioException("Código de correo inválido o vencido."));
-        var celular=codigos.findByUsuarioIdAndCanal(u.getId(),CanalVerificacion.CELULAR).orElseThrow(()->new ReglaNegocioException("Código de celular inválido o vencido."));
         boolean correoValido=correo.coincide(s.codigoCorreo(),codificador,ahora);
-        boolean celularValido=celular.coincide(s.codigoCelular(),codificador,ahora);
+        var celular=verificacionCelularHabilitada
+                ? codigos.findByUsuarioIdAndCanal(u.getId(),CanalVerificacion.CELULAR).orElseThrow(()->new ReglaNegocioException("Código de celular inválido o vencido."))
+                : null;
+        boolean celularValido=!verificacionCelularHabilitada || (s.codigoCelular()!=null && celular.coincide(s.codigoCelular(),codificador,ahora));
         if (!correoValido || !celularValido) throw new CodigoVerificacionInvalidoException();
-        correo.marcarUsado(ahora); celular.marcarUsado(ahora);
-        u.verificar(CanalVerificacion.CORREO,ahora); u.verificar(CanalVerificacion.CELULAR,ahora);
+        correo.marcarUsado(ahora);
+        if (celular!=null) celular.marcarUsado(ahora);
+        u.verificar(CanalVerificacion.CORREO,ahora,verificacionCelularHabilitada);
+        if (celular!=null) u.verificar(CanalVerificacion.CELULAR,ahora,verificacionCelularHabilitada);
         auditoria.save(new EventoAuditoria(UUID.randomUUID(),"CORREO_VERIFICADO",u,"USUARIO",u.getId(),ahora));
-        auditoria.save(new EventoAuditoria(UUID.randomUUID(),"CELULAR_VERIFICADO",u,"USUARIO",u.getId(),ahora));
+        if (celular!=null) auditoria.save(new EventoAuditoria(UUID.randomUUID(),"CELULAR_VERIFICADO",u,"USUARIO",u.getId(),ahora));
     }
+
+    public boolean isVerificacionCelularHabilitada() { return verificacionCelularHabilitada; }
 }

@@ -12,6 +12,7 @@ import co.edu.uco.kudos.comun.error.ReglaNegocioException;
 import co.edu.uco.kudos.reconocimiento.dominio.AdjuntoKudo;
 import co.edu.uco.kudos.reconocimiento.dominio.Kudo;
 import co.edu.uco.kudos.reconocimiento.infraestructura.AlmacenamientoAdjuntos;
+import co.edu.uco.kudos.reconocimiento.infraestructura.AlmacenamientoAdjuntosLocal;
 import co.edu.uco.kudos.reconocimiento.persistencia.AdjuntoKudoRepositorio;
 import co.edu.uco.kudos.reconocimiento.persistencia.KudoRepositorio;
 import co.edu.uco.kudos.usuario.dominio.EstadoAprobacion;
@@ -54,7 +55,7 @@ class ServicioAdjuntosKudoTest {
         autor = usuario(UUID.randomUUID(), CORREO_AUTOR);
         destinatario = usuario(UUID.randomUUID(), "destinatario@uco.edu.co");
         kudo = new Kudo(ID_KUDO, autor, destinatario, null, "Gracias por tu apoyo", ahora, ahora);
-        almacenamiento = new AlmacenamientoAdjuntos(directorioTemporal.toString());
+        almacenamiento = new AlmacenamientoAdjuntosLocal(directorioTemporal.toString());
         servicio = new ServicioAdjuntosKudo(adjuntos, kudos, usuarios, almacenamiento);
 
         when(kudos.findById(ID_KUDO)).thenReturn(Optional.of(kudo));

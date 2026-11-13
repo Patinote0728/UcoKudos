@@ -113,8 +113,12 @@ public class Usuario {
     }
 
     public void aprobar(Instant instante) {
+        aprobar(instante, true);
+    }
+
+    public void aprobar(Instant instante, boolean requiereVerificacionCelular) {
         this.estadoAprobacion = EstadoAprobacion.APROBADA;
-        actualizarActividad(instante);
+        actualizarActividad(instante, requiereVerificacionCelular);
     }
 
     public void rechazar(Instant instante) {
@@ -124,16 +128,25 @@ public class Usuario {
     }
 
     public void verificar(CanalVerificacion canal, Instant instante) {
+        verificar(canal, instante, true);
+    }
+
+    public void verificar(CanalVerificacion canal, Instant instante, boolean requiereVerificacionCelular) {
         if (canal == CanalVerificacion.CORREO) {
             this.correoVerificado = true;
         } else {
             this.celularVerificado = true;
         }
-        actualizarActividad(instante);
+        actualizarActividad(instante, requiereVerificacionCelular);
     }
 
     private void actualizarActividad(Instant instante) {
-        this.activo = estadoAprobacion == EstadoAprobacion.APROBADA && correoVerificado && celularVerificado;
+        actualizarActividad(instante, true);
+    }
+
+    private void actualizarActividad(Instant instante, boolean requiereVerificacionCelular) {
+        this.activo = estadoAprobacion == EstadoAprobacion.APROBADA && correoVerificado
+                && (!requiereVerificacionCelular || celularVerificado);
         this.actualizadoEn = instante;
     }
 }

@@ -64,7 +64,7 @@ La API valida que el mensaje no esté vacío, que el autor autenticado y el dest
 
 En el perfil local se crean cuentas de demostración para autor, destinatario y la cadena de aprobaciones. Los correos para aprobación son `demo.programa@uco.edu.co`, `demo.facultad@uco.edu.co`, `demo.academico@uco.edu.co`, `demo.rector@uco.edu.co` y `demo.admin@uco.edu.co`. Todas usan la contraseña definida por `DEMO_ACCOUNTS_PASSWORD` (por defecto `CambioLocal123!`). Se crea también una facultad y programa de demostración. Cambia esa clave para tu entorno local. El cargador está limitado al perfil `local`; no se incluye en `prod`.
 
-En local, los códigos de verificación de correo y celular se escriben en el registro de la aplicación; su entrega real por correo y SMS aún debe configurarse antes de desplegar. Los códigos vencen en 10 minutos y permiten hasta cinco intentos. El estudiante y el docente quedan vinculados al programa seleccionado. Para este flujo, ambos requieren aprobación del coordinador de programa; es una regla inicial que deberá confirmarse con la institución.
+En local, los códigos de verificación de correo y celular se escriben en el registro de la aplicación. En producción, el correo se entrega por Brevo, WhatsApp queda deshabilitado y las notificaciones de Kudo a ese canal se marcan como `OMITIDA` sin reintento. Para esta demostración, la verificación del celular también está desactivada: el número se registra, pero la cuenta se verifica únicamente por correo. Esto se controla con `ucokudos.verificacion.celular-habilitada=false` en `application-prod.yml`; vuelve a activarlo si configuras un proveedor de SMS. Los códigos vencen en 10 minutos y permiten hasta cinco intentos. El estudiante y el docente quedan vinculados al programa seleccionado. Para este flujo, ambos requieren aprobación del coordinador de programa; es una regla inicial que deberá confirmarse con la institución.
 
 La autenticación actual usa HTTP Basic y contraseñas BCrypt. Para solicitudes de escritura, solicita el token CSRF en `/api/csrf` y envíalo en la cabecera que indica la respuesta, conservando la cookie `XSRF-TOKEN` de la sesión HTTP. HTTP Basic solo debe usarse en producción detrás de HTTPS; para una experiencia de usuario final conviene evolucionar a inicio de sesión con tokens.
 
@@ -78,11 +78,9 @@ En `local`, cada canal queda como `SIMULADA`; no se envían mensajes reales. Par
 
 Configura `UCOKUDOS_NOTIFICACIONES_BREVO_API_KEY` y `UCOKUDOS_NOTIFICACIONES_BREVO_REMITENTE`. El remitente debe estar registrado/verificado en Brevo. El adaptador usa la API transaccional, no SMTP.
 
-### WhatsApp Cloud API de Meta
+### WhatsApp
 
-Configura `UCOKUDOS_NOTIFICACIONES_WHATSAPP_TOKEN`, `UCOKUDOS_NOTIFICACIONES_WHATSAPP_PHONE_NUMBER_ID`, `UCOKUDOS_NOTIFICACIONES_WHATSAPP_GRAPH_VERSION` y `UCOKUDOS_NOTIFICACIONES_WHATSAPP_TEMPLATE_NAME`; `UCOKUDOS_NOTIFICACIONES_WHATSAPP_TEMPLATE_LANGUAGE` es opcional y usa `es_CO` por defecto. La plantilla aprobada debe tener tres parámetros de cuerpo, en este orden: autor, categoría y mensaje.
-
-La persona también debe autorizar este canal desde `PUT /api/mi-cuenta/preferencias/notificaciones` con `{ "autorizado": true }`; puede revocarlo enviando `false`. Si no hay autorización, el trabajo queda `OMITIDA`. Meta exige una plantilla aprobada para iniciar conversaciones fuera de la ventana de servicio de 24 horas y aplica los precios vigentes a mensajes iniciados por la empresa; revisa su política antes de habilitarlo. [Política de WhatsApp Business](https://business.whatsapp.com/policy/preview?lang=es_LA)
+El canal queda deshabilitado en `prod`: los trabajos se marcan como `OMITIDA` y la API no permite activarlo. No agregues credenciales ni plantillas de Meta para esta demostración.
 
 ### Push por Firebase Cloud Messaging
 
@@ -96,8 +94,18 @@ El flujo `.github/workflows/verificacion.yml` compila el proyecto con Java 17 en
 
 Las pruebas automatizadas se ejecutan con `mvn -B test` y requieren PostgreSQL disponible en el puerto `5433` (por ejemplo, con `docker compose up -d database`). La prueba de integración crea un esquema aleatorio aislado, recorre el registro, la verificación, la aprobación, la publicación, la auditoría y la cola de notificaciones, y elimina ese esquema al terminar; también guarda y descarga un adjunto. La suite unitaria cubre la autorización del autor, los tipos de archivo permitidos y el máximo de tres adjuntos por Kudo. El flujo de GitHub inicia PostgreSQL como servicio e incluye ambas pruebas mediante `mvn verify`.
 
+## Preparar el despliegue
+
+El perfil `prod` se ejecuta en un contenedor definido en `backend/Dockerfile`. El archivo `render.yaml` permite crear el servicio desde **New > Blueprint** en Render; completa allí los valores secretos que solicita. Para Firebase, sube también el JSON de la cuenta de servicio como archivo secreto y asigna su ruta a `GOOGLE_APPLICATION_CREDENTIALS`. La aplicación escucha en `PORT` (Render lo establece automáticamente) y expone `/actuator/health`. El contenedor no conserva archivos: en producción los adjuntos van al bucket privado de Supabase Storage y se descargan a través de la API autenticada, nunca desde una URL pública. Render documenta el uso de Blueprints para declarar el Dockerfile, la comprobación de salud y las variables de entorno; los secretos con `sync: false` se ingresan desde su panel. [Blueprints de Render](https://render.com/docs/blueprint-spec)
+
+Provisiona PostgreSQL administrado y configura `DB_URL`, `DB_USERNAME` y `DB_PASSWORD`. Para conectar Render (IPv4) con una base Supabase, usa la cadena del Session Pooler. Configura además `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` y `SUPABASE_STORAGE_BUCKET` (por defecto `adjuntos-kudos`). Crea ese bucket como **privado**, con límite de 5 MB y tipos permitidos `application/pdf`, `image/png` y `image/jpeg`. La clave `service_role` es un secreto exclusivo del backend y nunca se debe incluir en la interfaz ni en Git.
+
+El perfil `prod` requiere correo transaccional por Brevo y Firebase push. En Render configura `UCOKUDOS_NOTIFICACIONES_BREVO_API_KEY`, `UCOKUDOS_NOTIFICACIONES_BREVO_REMITENTE` y `UCOKUDOS_NOTIFICACIONES_FIREBASE_PROJECT_ID`. Para FCM, agrega la credencial de cuenta de servicio como archivo secreto en Render y define `GOOGLE_APPLICATION_CREDENTIALS` con su ruta. El remitente debe estar verificado en Brevo. No se requieren credenciales de WhatsApp. No uses el plan gratuito de base de datos de Render para datos que deban durar: vence a los 30 días.
+
+Activa el perfil con `SPRING_PROFILES_ACTIVE=prod`. No configures `DEMO_ACCOUNTS_ENABLED` ni publiques secretos en archivos del repositorio. Los servicios gratuitos pueden suspenderse por inactividad, tener límites o cambiar sus condiciones; esta configuración sirve para una demostración y no sustituye copias de seguridad ni un servicio con garantías de disponibilidad.
+
 ## Perfiles
 
 - `local` (predeterminado): conexión local con PostgreSQL.
-- `prod`: se añadirá al preparar el despliegue; sus secretos deben venir de variables de entorno.
+- `prod`: base de datos, bucket privado y servicios externos configurados mediante variables/secretos del entorno.
 

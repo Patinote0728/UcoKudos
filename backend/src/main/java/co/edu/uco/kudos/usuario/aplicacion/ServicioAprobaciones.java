@@ -10,13 +10,16 @@ import co.edu.uco.kudos.usuario.persistencia.*;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ServicioAprobaciones {
     private final UsuarioRepositorio usuarios; private final SolicitudRegistroRepositorio solicitudes; private final EventoAuditoriaRepositorio auditoria;
-    public ServicioAprobaciones(UsuarioRepositorio u,SolicitudRegistroRepositorio s,EventoAuditoriaRepositorio a){usuarios=u;solicitudes=s;auditoria=a;}
+    private final boolean verificacionCelularHabilitada;
+    public ServicioAprobaciones(UsuarioRepositorio u,SolicitudRegistroRepositorio s,EventoAuditoriaRepositorio a,
+            @Value("${ucokudos.verificacion.celular-habilitada:true}") boolean verificacionCelularHabilitada){usuarios=u;solicitudes=s;auditoria=a;this.verificacionCelularHabilitada=verificacionCelularHabilitada;}
     @Transactional(readOnly=true)
     public List<AprobacionRespuesta> pendientes(String correo) {
         Usuario actor=actor(correo);
@@ -34,7 +37,7 @@ public class ServicioAprobaciones {
                 || actor.getId().equals(s.getUsuario().getId())) throw new ReglaNegocioException("No tienes autorización para decidir esta solicitud.");
         if(dto.decision()==EstadoAprobacion.PENDIENTE) throw new ReglaNegocioException("La decisión debe ser APROBADA o RECHAZADA.");
         Instant ahora=Instant.now(); s.decidir(actor,dto.decision(),dto.comentario(),ahora);
-        if(dto.decision()==EstadoAprobacion.APROBADA) s.getUsuario().aprobar(ahora); else s.getUsuario().rechazar(ahora);
+        if(dto.decision()==EstadoAprobacion.APROBADA) s.getUsuario().aprobar(ahora,verificacionCelularHabilitada); else s.getUsuario().rechazar(ahora);
         auditoria.save(new EventoAuditoria(UUID.randomUUID(),"SOLICITUD_REGISTRO_"+dto.decision(),actor,"SOLICITUD_REGISTRO",id,ahora));
     }
     private Usuario actor(String correo){return usuarios.findByCorreoInstitucional(correo).filter(Usuario::isActivo).orElseThrow(()->new ReglaNegocioException("Usuario aprobador inactivo."));}

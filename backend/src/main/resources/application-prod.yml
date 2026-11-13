@@ -1,0 +1,47 @@
+server:
+  address: 0.0.0.0
+  port: ${PORT:8080}
+  forward-headers-strategy: framework
+
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:5}
+  jpa:
+    show-sql: false
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
+management:
+  endpoint:
+    health:
+      show-details: never
+
+ucokudos:
+  demostracion:
+    habilitada: false
+  adjuntos:
+    supabase:
+      url: ${SUPABASE_URL}
+      service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
+      bucket: ${SUPABASE_STORAGE_BUCKET:adjuntos-kudos}
+  notificaciones:
+    reales-habilitadas: true
+    whatsapp-habilitadas: false
+    brevo:
+      api-key: ${UCOKUDOS_NOTIFICACIONES_BREVO_API_KEY}
+      remitente: ${UCOKUDOS_NOTIFICACIONES_BREVO_REMITENTE}
+      nombre-remitente: ${UCOKUDOS_NOTIFICACIONES_BREVO_NOMBRE_REMITENTE:UCO Kudos}
+    firebase:
+      project-id: ${UCOKUDOS_NOTIFICACIONES_FIREBASE_PROJECT_ID}
+  verificacion:
+    celular-habilitada: false
+    brevo:
+      api-key: ${UCOKUDOS_VERIFICACION_BREVO_API_KEY:${UCOKUDOS_NOTIFICACIONES_BREVO_API_KEY}}
+      remitente: ${UCOKUDOS_VERIFICACION_BREVO_REMITENTE:${UCOKUDOS_NOTIFICACIONES_BREVO_REMITENTE}}
+      nombre-remitente: ${UCOKUDOS_VERIFICACION_BREVO_NOMBRE_REMITENTE:UCO Kudos}

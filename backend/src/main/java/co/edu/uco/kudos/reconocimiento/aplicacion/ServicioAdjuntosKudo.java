@@ -11,8 +11,6 @@ import co.edu.uco.kudos.reconocimiento.persistencia.KudoRepositorio;
 import co.edu.uco.kudos.usuario.dominio.Usuario;
 import co.edu.uco.kudos.usuario.persistencia.UsuarioRepositorio;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -20,7 +18,6 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -79,8 +76,7 @@ public class ServicioAdjuntosKudo {
         AdjuntoKudo adjunto=adjuntos.findByIdAndKudoId(adjuntoId,kudoId)
                 .orElseThrow(()->new RecursoNoEncontradoException("No se encontró el archivo adjunto."));
         try {
-            Path ruta=almacenamiento.resolver(adjunto.getClaveAlmacenamiento());
-            Resource recurso=new UrlResource(ruta.toUri());
+            Resource recurso=almacenamiento.resolver(adjunto.getClaveAlmacenamiento());
             if (!recurso.exists() || !recurso.isReadable()) throw new RecursoNoEncontradoException("El archivo adjunto ya no está disponible.");
             return new DescargaAdjunto(adjunto.getNombreArchivoOriginal(),adjunto.getTipoContenido(),recurso);
         } catch (IOException fallo) {

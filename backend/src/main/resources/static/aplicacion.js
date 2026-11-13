@@ -1,5 +1,5 @@
 const estado = { correo: null, contrasena: null, csrf: null, categorias: [], usuario: null,
-  correoPorVerificar: null, catalogosRegistro: null, temporizadorAviso: null };
+  correoPorVerificar: null, verificarCelular: true, catalogosRegistro: null, temporizadorAviso: null };
 const porId = (id) => document.getElementById(id);
 
 function credencialBasica() {
@@ -215,8 +215,14 @@ async function registrarCuenta(evento) {
       programaId: porId('registro-programa').value || null,
       facultadId: porId('registro-facultad').value || null
     };
-    await peticion('/api/registros', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(solicitud) });
+    const registro = await peticion('/api/registros', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(solicitud) });
     estado.correoPorVerificar = solicitud.correoInstitucional;
+    estado.verificarCelular = registro.verificarCelular !== false;
+    porId('grupo-codigo-celular').classList.toggle('oculto', !estado.verificarCelular);
+    porId('codigo-celular').required = estado.verificarCelular;
+    porId('ayuda-verificacion').textContent = estado.verificarCelular
+      ? 'Ingresa los códigos enviados a tu correo y celular. En el entorno local aparecen en el registro de la aplicación.'
+      : 'Ingresa el código enviado a tu correo. El número celular queda registrado sin verificación para esta demostración.';
     mostrarFormularioAcceso('formulario-verificacion');
   } catch (fallo) {
     error.textContent = fallo.message;
@@ -237,12 +243,13 @@ async function verificarRegistro(evento) {
     await peticion('/api/registros/verificar', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ correoInstitucional: estado.correoPorVerificar,
-        codigoCorreo: porId('codigo-correo').value.trim(), codigoCelular: porId('codigo-celular').value.trim() })
+        codigoCorreo: porId('codigo-correo').value.trim(), codigoCelular: estado.verificarCelular ? porId('codigo-celular').value.trim() : null })
     });
     porId('formulario-acceso').reset();
     porId('correo').value = estado.correoPorVerificar;
     porId('contrasena').value = '';
     estado.correoPorVerificar = null;
+    estado.verificarCelular = true;
     formulario.reset();
     mostrarFormularioAcceso('formulario-acceso');
     mostrarAviso('Datos verificados. Tu solicitud queda pendiente de aprobación.');

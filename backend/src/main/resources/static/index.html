@@ -77,11 +77,13 @@
           <div class="icono-circular" aria-hidden="true">✓</div>
           <p class="sobrelinea">Un paso más</p>
           <h2>Verifica tus datos</h2>
-          <p class="texto-ayuda">Ingresa los códigos enviados a tu correo y celular. En el entorno local de desarrollo aparecen en el registro de la aplicación.</p>
+          <p id="ayuda-verificacion" class="texto-ayuda">Ingresa los códigos enviados a tu correo y celular. En el entorno local de desarrollo aparecen en el registro de la aplicación.</p>
           <label for="codigo-correo">Código del correo</label>
           <input id="codigo-correo" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
-          <label for="codigo-celular">Código del celular</label>
-          <input id="codigo-celular" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required>
+          <div id="grupo-codigo-celular">
+            <label for="codigo-celular">Código del celular</label>
+            <input id="codigo-celular" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required>
+          </div>
           <button class="boton boton-principal boton-ancho" type="submit">Verificar y continuar</button>
           <p id="error-verificacion" class="mensaje error oculto" role="alert"></p>
         </form>

@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: uco-kudos
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_POOL_SIZE
+        value: "3"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: adjuntos-kudos
+      - key: UCOKUDOS_NOTIFICACIONES_BREVO_API_KEY
+        sync: false
+      - key: UCOKUDOS_NOTIFICACIONES_BREVO_REMITENTE
+        sync: false
+      - key: UCOKUDOS_NOTIFICACIONES_FIREBASE_PROJECT_ID
+        sync: false
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        sync: false

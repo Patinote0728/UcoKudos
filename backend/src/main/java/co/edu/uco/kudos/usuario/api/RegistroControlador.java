@@ -16,8 +16,8 @@ public class RegistroControlador {
     private final ServicioRegistro servicio;
     public RegistroControlador(ServicioRegistro servicio) { this.servicio = servicio; }
     @PostMapping @ResponseStatus(HttpStatus.CREATED)
-    public Map<String, String> registrar(@Valid @RequestBody RegistrarUsuarioSolicitud solicitud) {
-        servicio.registrar(solicitud); return Map.of("mensaje", "Registro creado; verifica correo y celular.");
+    public Map<String, Object> registrar(@Valid @RequestBody RegistrarUsuarioSolicitud solicitud) {
+        servicio.registrar(solicitud); return Map.of("mensaje", "Registro creado; verifica tu correo.", "verificarCelular", servicio.isVerificacionCelularHabilitada());
     }
     @PostMapping("/verificar")
     public Map<String, String> verificar(@Valid @RequestBody VerificarRegistroSolicitud solicitud) {
