@@ -49,7 +49,7 @@ public class ServicioAdjuntosKudo {
         try {
             byte[] contenido = archivo.getBytes();
             String tipo = detectarTipo(contenido);
-            String clave = almacenamiento.guardar(contenido);
+            String clave = almacenamiento.guardar(contenido, tipo);
             try {
                 AdjuntoKudo adjunto = new AdjuntoKudo(UUID.randomUUID(), kudo, clave,
                         limpiarNombre(archivo.getOriginalFilename()), tipo, contenido.length,

@@ -27,13 +27,13 @@ public class AlmacenamientoAdjuntosSupabase implements AlmacenamientoAdjuntos {
     }
 
     @Override
-    public String guardar(byte[] contenido) throws IOException {
+    public String guardar(byte[] contenido, String tipoContenido) throws IOException {
         String clave = UUID.randomUUID().toString();
         cliente.post().uri("/storage/v1/object/{bucket}/{clave}", bucket, clave)
                 .header("apikey", claveServicio)
                 .header("Authorization", "Bearer " + claveServicio)
                 .header("x-upsert", "false")
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .contentType(MediaType.parseMediaType(tipoContenido))
                 .body(contenido)
                 .retrieve().toBodilessEntity();
         return clave;

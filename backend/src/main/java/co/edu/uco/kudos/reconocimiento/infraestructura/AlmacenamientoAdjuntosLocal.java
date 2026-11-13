@@ -21,7 +21,7 @@ public class AlmacenamientoAdjuntosLocal implements AlmacenamientoAdjuntos {
     }
 
     @Override
-    public String guardar(byte[] contenido) throws IOException {
+    public String guardar(byte[] contenido, String tipoContenido) throws IOException {
         Files.createDirectories(directorio);
         String clave = UUID.randomUUID().toString();
         Files.write(directorio.resolve(clave), contenido, StandardOpenOption.CREATE_NEW);
