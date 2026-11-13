@@ -94,7 +94,7 @@ El estado `ENVIADA` confirma aceptación por el proveedor, no entrega al teléfo
 
 El flujo `.github/workflows/verificacion.yml` compila el proyecto con Java 17 en cada push y pull request. También analiza dependencias, secretos y configuración con Trivy. El análisis reporta hallazgos sin bloquear todavía la compilación; revisa los resultados y endurece el umbral cuando se haya establecido una línea base.
 
-Las pruebas automatizadas se ejecutan con `mvn -B test`. La primera suite cubre la carga física de un PDF, la autorización del autor, los tipos de archivo permitidos y el máximo de tres adjuntos por Kudo. El flujo de GitHub las incluye mediante `mvn verify`.
+Las pruebas automatizadas se ejecutan con `mvn -B test` y requieren PostgreSQL disponible en el puerto `5433` (por ejemplo, con `docker compose up -d database`). La prueba de integración crea un esquema aleatorio aislado, recorre el registro, la verificación, la aprobación, la publicación, la auditoría y la cola de notificaciones, y elimina ese esquema al terminar; también guarda y descarga un adjunto. La suite unitaria cubre la autorización del autor, los tipos de archivo permitidos y el máximo de tres adjuntos por Kudo. El flujo de GitHub inicia PostgreSQL como servicio e incluye ambas pruebas mediante `mvn verify`.
 
 ## Perfiles
 
