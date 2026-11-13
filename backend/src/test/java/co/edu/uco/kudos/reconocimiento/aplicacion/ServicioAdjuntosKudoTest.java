@@ -77,8 +77,9 @@ class ServicioAdjuntosKudoTest {
         AdjuntoKudo guardado = captor.getValue();
         assertEquals("reconocimiento.pdf", respuesta.nombreArchivo());
         assertEquals("application/pdf", respuesta.tipoContenido());
-        assertArrayEquals(contenido, Files.readAllBytes(
-                almacenamiento.resolver(guardado.getClaveAlmacenamiento())));
+        try (var archivoGuardado = almacenamiento.resolver(guardado.getClaveAlmacenamiento()).getInputStream()) {
+            assertArrayEquals(contenido, archivoGuardado.readAllBytes());
+        }
     }
 
     @Test
